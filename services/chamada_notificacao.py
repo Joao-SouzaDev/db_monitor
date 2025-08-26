@@ -5,13 +5,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API_URL = os.getenv("API_URL_NOTIFICACAO", "http://localhost:3030/api/v1/notificacao")
+API_URL = (
+    os.getenv("API_URL_NOTIFICACAO", "http://localhost:3030/api/v1/notificacao")
+    + "/mensagem"
+)
 
 
 def enviar_notificacao(mensagem, phone):
     """Envia notificação via API para o número de telefone informado."""
     payload = {
-        "mensagem": mensagem,
+        "message": mensagem,
         "phone": phone,
     }
     try:

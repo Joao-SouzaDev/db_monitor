@@ -40,14 +40,14 @@ class GLPIMonitor:
             logging.error(f"Erro ao conectar ao banco de dados GLPI: {e}")
             return None
 
-    def get_new_tickets(self, interval_hours=168):
+    def get_new_tickets(self, interval_seconds=30):
         """Busca por novos tickets criados no intervalo de tempo."""
         conn = self._get_db_connection()
         if not conn:
             return []
         try:
             with conn.cursor() as cursor:
-                time_threshold = datetime.now() - timedelta(hours=interval_hours)
+                time_threshold = datetime.now() - timedelta(seconds=interval_seconds)
                 logging.info(
                     f"Buscando tickets criados desde {time_threshold.strftime('%Y-%m-%d %H:%M:%S')}"
                 )
@@ -94,7 +94,7 @@ class GLPIMonitor:
         finally:
             conn.close()
 
-    def get_new_followups(self, interval_hours=168):
+    def get_new_followups(self, interval_seconds=10):
         """Busca por novos acompanhamentos criados no intervalo de tempo."""
         conn = self._get_db_connection()
         if not conn:
@@ -102,7 +102,7 @@ class GLPIMonitor:
 
         try:
             with conn.cursor() as cursor:
-                time_threshold = datetime.now() - timedelta(hours=interval_hours)
+                time_threshold = datetime.now() - timedelta(seconds=interval_seconds)
                 logging.info(
                     f"Buscando acompanhamentos criados desde {time_threshold.strftime('%Y-%m-%d %H:%M:%S')}"
                 )
@@ -178,7 +178,7 @@ def __main__():
     logging.info(f"Conectando ao banco de dados GLPI: {config['DB_HOST']}")
     monitor = GLPIMonitor(config)
     while True:
-        followups = monitor.get_new_followups()
+        followups = monitor.get_new_followups(1)
         if followups:
             logging.info(f"Encontrados {len(followups)} novos acompanhamentos.")
             for followup in followups:
@@ -189,7 +189,7 @@ def __main__():
                     from services.chamada_notificacao import enviar_notificacao
 
                     mensagem = (
-                        f"🆕 Novo acompanhamento no ticket!\n"
+                        f"🆕 Novo acompanhamento de chamado!\n"
                         f"Ticket: {followup['ticket_title']}\n"
                         f"Autor: {followup['author_name']}\n"
                         f"Data: {followup['date_creation']}\n"
@@ -198,7 +198,7 @@ def __main__():
                     enviar_notificacao(mensagem, followup["phone"])
         else:
             logging.info("Nenhum novo acompanhamento encontrado.")
-        tickets = monitor.get_new_tickets()
+        tickets = monitor.get_new_tickets(1)
         if tickets:
             logging.info(f"Encontrados {len(tickets)} novos tickets.")
             for ticket in tickets:
@@ -219,12 +219,8 @@ def __main__():
                     enviar_notificacao(mensagem, ticket["phone"])
         else:
             logging.info("Nenhum novo ticket encontrado.")
-        time.sleep(30)
 
 
-schedule.every(30).seconds.do(__main__)
 if __name__ == "__main__":
     logging.info("Monitor de banco iniciado")
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+    __main__()

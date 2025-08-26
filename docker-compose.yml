@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  db_monitor:
+    build: .
+    container_name: db_monitor
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: python monitor.py
+    restart: unless-stopped

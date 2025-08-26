@@ -1,5 +1,6 @@
 psycopg2-binary   # Para PostgreSQL
 pymysql           # Para MySQL/MariaDB
 pyodbc            # Para SQL Server
+python-dotenv
 requests          # Caso precise chamar APIs
 schedule          # Para agendamento em tempo real
