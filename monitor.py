@@ -175,9 +175,9 @@ def __main__():
         "DB_PASSWORD": os.getenv("DB_PASSWORD"),
         "DB_NAME": os.getenv("DB_NAME"),
     }
-    logging.info(f"Conectando ao banco de dados GLPI: {config['DB_HOST']}")
     monitor = GLPIMonitor(config)
     while True:
+        logging.info(f"Conectando ao banco de dados GLPI: {config['DB_HOST']}")
         followups = monitor.get_new_followups(1)
         if followups:
             logging.info(f"Encontrados {len(followups)} novos acompanhamentos.")
@@ -219,6 +219,7 @@ def __main__():
                     enviar_notificacao(mensagem, ticket["phone"])
         else:
             logging.info("Nenhum novo ticket encontrado.")
+        time.sleep(30)
 
 
 if __name__ == "__main__":
