@@ -4,9 +4,7 @@ import os
 import logging
 from dotenv import load_dotenv
 import pymysql
-import schedule
 from datetime import datetime, timedelta
-import requests
 import re
 
 logging.basicConfig(
@@ -48,7 +46,7 @@ class GLPIMonitor:
             logging.error(f"Erro ao conectar ao banco de dados GLPI: {e}")
             return None
 
-    def get_new_tickets(self, interval_minutes=10):
+    def get_new_tickets(self, interval_minutes=3):
         """Busca por novos tickets criados no intervalo de tempo."""
         conn = self._get_db_connection()
         if not conn:
@@ -106,7 +104,7 @@ class GLPIMonitor:
         finally:
             conn.close()
 
-    def get_new_followups(self, interval_minutes=10):
+    def get_new_followups(self, interval_minutes=3):
         """Busca por novos acompanhamentos criados no intervalo de tempo."""
         conn = self._get_db_connection()
         if not conn:
@@ -236,7 +234,7 @@ def __main__():
                     enviar_notificacao(mensagem, ticket["phone"])
         else:
             logging.info("Nenhum novo ticket encontrado.")
-        time.sleep(30)
+        time.sleep(180)
 
 
 if __name__ == "__main__":
