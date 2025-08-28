@@ -1,4 +1,5 @@
 import time
+import pytz
 import os
 import logging
 from dotenv import load_dotenv
@@ -6,6 +7,7 @@ import pymysql
 import schedule
 from datetime import datetime, timedelta
 import requests
+import re
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -14,6 +16,12 @@ logging.basicConfig(
 
 class GLPIMonitor:
     """Monitora o banco de dados do GLPI em busca de novos tickets e acompanhamentos."""
+
+    @staticmethod
+    def remove_html_tags(text):
+        if not text:
+            return text
+        return re.sub(r"<[^>]+>", "", text)
 
     def __init__(self, config):
         self.db_config = {
@@ -40,14 +48,15 @@ class GLPIMonitor:
             logging.error(f"Erro ao conectar ao banco de dados GLPI: {e}")
             return None
 
-    def get_new_tickets(self, interval_seconds=30):
+    def get_new_tickets(self, interval_minutes=10):
         """Busca por novos tickets criados no intervalo de tempo."""
         conn = self._get_db_connection()
         if not conn:
             return []
         try:
-            with conn.cursor() as cursor:
-                time_threshold = datetime.now() - timedelta(seconds=interval_seconds)
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                tz = pytz.timezone("America/Sao_Paulo")
+                time_threshold = datetime.now(tz) - timedelta(minutes=interval_minutes)
                 logging.info(
                     f"Buscando tickets criados desde {time_threshold.strftime('%Y-%m-%d %H:%M:%S')}"
                 )
@@ -87,6 +96,9 @@ class GLPIMonitor:
                     """
                 cursor.execute(sql, (time_threshold,))
                 chamados = cursor.fetchall()
+                # Remove tags HTML do campo content
+                for chamado in chamados:
+                    chamado["content"] = self.remove_html_tags(chamado["content"])
                 return chamados
         except pymysql.MySQLError as e:
             logging.error(f"Erro ao buscar acompanhamentos: {e}")
@@ -94,15 +106,16 @@ class GLPIMonitor:
         finally:
             conn.close()
 
-    def get_new_followups(self, interval_seconds=10):
+    def get_new_followups(self, interval_minutes=10):
         """Busca por novos acompanhamentos criados no intervalo de tempo."""
         conn = self._get_db_connection()
         if not conn:
             return []
 
         try:
-            with conn.cursor() as cursor:
-                time_threshold = datetime.now() - timedelta(seconds=interval_seconds)
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                tz = pytz.timezone("America/Sao_Paulo")
+                time_threshold = datetime.now(tz) - timedelta(minutes=interval_minutes)
                 logging.info(
                     f"Buscando acompanhamentos criados desde {time_threshold.strftime('%Y-%m-%d %H:%M:%S')}"
                 )
@@ -116,6 +129,7 @@ class GLPIMonitor:
                         author.name AS author_name,
                         author_email.email AS author_email,
                         req_user.name AS requester_name,
+                        req_user.phone AS phone,
                         req_email.email AS requester_email,
                         tech_user.name AS technician_name,
                         tech_email.email AS technician_email
@@ -151,12 +165,15 @@ class GLPIMonitor:
                     """
                 cursor.execute(sql, (time_threshold,))
                 followups = cursor.fetchall()
+                # Remove tags HTML do campo content
+                for followup in followups:
+                    followup["content"] = self.remove_html_tags(followup["content"])
                 logging.info(
                     f"Query de acompanhamentos retornou {len(followups)} resultados"
                 )
                 for i, followup in enumerate(followups):
                     logging.info(
-                        f"Acompanhamento {i+1}: ID={followup['id']}, ticket_id={followup['ticket_id']}, author_email={followup.get('author_email')}, requester_email={followup.get('requester_email')}, technician_email={followup.get('technician_email')}"
+                        f"Acompanhamento {i+1}: ID={followup['id']}, ticket_id={followup['ticket_id']}, author_email={followup['author_email']}, requester_email={followup['requester_email']}, technician_email={followup['technician_email']}"
                     )
                 return followups
         except pymysql.MySQLError as e:
@@ -178,7 +195,7 @@ def __main__():
     monitor = GLPIMonitor(config)
     while True:
         logging.info(f"Conectando ao banco de dados GLPI: {config['DB_HOST']}")
-        followups = monitor.get_new_followups(1)
+        followups = monitor.get_new_followups()
         if followups:
             logging.info(f"Encontrados {len(followups)} novos acompanhamentos.")
             for followup in followups:
@@ -198,7 +215,7 @@ def __main__():
                     enviar_notificacao(mensagem, followup["phone"])
         else:
             logging.info("Nenhum novo acompanhamento encontrado.")
-        tickets = monitor.get_new_tickets(1)
+        tickets = monitor.get_new_tickets()
         if tickets:
             logging.info(f"Encontrados {len(tickets)} novos tickets.")
             for ticket in tickets:

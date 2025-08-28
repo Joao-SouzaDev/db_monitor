@@ -17,6 +17,7 @@ def enviar_notificacao(mensagem, phone):
         "message": mensagem,
         "phone": phone,
     }
+    logging.warning(f"Enviando notificação para {phone}: {mensagem} | url: {API_URL}")
     try:
         response = requests.post(API_URL, json=payload, timeout=5)
         if response.status_code == 200:
