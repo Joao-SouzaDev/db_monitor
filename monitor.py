@@ -5,7 +5,8 @@ import logging
 from dotenv import load_dotenv
 import pymysql
 from datetime import datetime, timedelta
-import re
+import html
+from bs4 import BeautifulSoup
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -16,10 +17,13 @@ class GLPIMonitor:
     """Monitora o banco de dados do GLPI em busca de novos tickets e acompanhamentos."""
 
     @staticmethod
-    def remove_html_tags(text):
+    def normalize_html_text(text):
         if not text:
-            return text
-        return re.sub(r"<[^>]+>", "", text)
+            return ""
+        text = html.unescape(text)
+        soup = BeautifulSoup(text, "html.parser")
+        texto_formatado = soup.get_text(separator="\n")
+        return texto_formatado.strip()
 
     def __init__(self, config):
         self.db_config = {
@@ -96,7 +100,7 @@ class GLPIMonitor:
                 chamados = cursor.fetchall()
                 # Remove tags HTML do campo content
                 for chamado in chamados:
-                    chamado["content"] = self.remove_html_tags(chamado["content"])
+                    chamado["content"] = self.normalize_html_text(chamado["content"])
                 return chamados
         except pymysql.MySQLError as e:
             logging.error(f"Erro ao buscar acompanhamentos: {e}")
@@ -165,7 +169,7 @@ class GLPIMonitor:
                 followups = cursor.fetchall()
                 # Remove tags HTML do campo content
                 for followup in followups:
-                    followup["content"] = self.remove_html_tags(followup["content"])
+                    followup["content"] = self.normalize_html_text(followup["content"])
                 logging.info(
                     f"Query de acompanhamentos retornou {len(followups)} resultados"
                 )

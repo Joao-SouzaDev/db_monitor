@@ -4,4 +4,5 @@ pyodbc            # Para SQL Server
 python-dotenv
 requests          # Caso precise chamar APIs
 schedule          # Para agendamento em tempo real
- pytz             # Para suporte a timezones
+pytz             # Para suporte a timezones
+bs4              # Para manipulação de HTML
