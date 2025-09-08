@@ -73,7 +73,7 @@ class GLPIMonitor:
                         req_user.name AS requester_name,
                         req_email.email AS requester_email,
                         tech_user.name AS technician_name,
-                        tech_user.phone AS phone,
+                        req_user.phone AS phone,
                         tech_email.email AS technician_email
                     FROM glpi_tickets AS t
                     -- Join para encontrar o Solicitante do ticket (type=1)
