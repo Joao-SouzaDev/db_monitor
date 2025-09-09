@@ -108,6 +108,126 @@ class GLPIMonitor:
         finally:
             conn.close()
 
+    def get_close_tickets(self, interval_minutes=3):
+        """Busca por tickets fechados no intervalo de tempo."""
+        conn = self._get_db_connection()
+        if not conn:
+            return []
+        try:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                tz = pytz.timezone("America/Sao_Paulo")
+                time_threshold = datetime.now(tz) - timedelta(minutes=interval_minutes)
+                logging.info(
+                    f"Buscando tickets fechados desde {time_threshold.strftime('%Y-%m-%d %H:%M:%S')}"
+                )
+                sql = """
+                    SELECT
+                        t.id,
+                        t.name,
+                        s.content,
+                        t.date_creation,
+                        t.date_mod,
+                        t.status,
+                        req_user.name AS requester_name,
+                        req_email.email AS requester_email,
+                        req_user.phone AS phone,
+                        tech_user.name AS technician_name,
+                        tech_email.email AS technician_email
+                    FROM glpi_tickets AS t
+                    -- Join para pegar a descrição da solução
+                    LEFT JOIN glpi_itilsolutions AS s
+                    ON t.id = s.items_id
+                    -- Join para encontrar o Solicitante do ticket (type=1)
+                    LEFT JOIN glpi_tickets_users AS req_tu
+                    ON t.id = req_tu.tickets_id
+                    AND req_tu.type = 1
+                    LEFT JOIN glpi_users AS req_user
+                    ON req_tu.users_id = req_user.id
+                    LEFT JOIN glpi_useremails AS req_email
+                    ON req_user.id = req_email.users_id
+                    AND req_email.is_default = 1
+                    -- Join para encontrar o Técnico Atribuído ao ticket (type=2)
+                    LEFT JOIN glpi_tickets_users AS tech_tu
+                    ON t.id = tech_tu.tickets_id AND tech_tu.type = 2
+                    LEFT JOIN glpi_users AS tech_user
+                    ON tech_tu.users_id = tech_user.id
+                    LEFT JOIN glpi_useremails AS tech_email
+                    ON tech_user.id = tech_email.users_id
+                    AND tech_email.is_default = 1
+                    WHERE t.date_mod >= %s
+                    AND t.status = 6
+                    ORDER BY t.date_mod DESC;
+                    """
+                cursor.execute(sql, (time_threshold,))
+                chamados = cursor.fetchall()
+                # Remove tags HTML do campo content
+                for chamado in chamados:
+                    chamado["content"] = self.normalize_html_text(chamado["content"])
+                return chamados
+        except pymysql.MySQLError as e:
+            logging.error(f"Erro ao buscar acompanhamentos: {e}")
+            return []
+        finally:
+            conn.close()
+
+    def get_new_validations(self, interval_minutes=3):
+        """Busca por novos tickets criados no intervalo de tempo."""
+        conn = self._get_db_connection()
+        if not conn:
+            return []
+        try:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                tz = pytz.timezone("America/Sao_Paulo")
+                time_threshold = datetime.now(tz) - timedelta(minutes=interval_minutes)
+                logging.info(
+                    f"Buscando aprovações de tickets desde {time_threshold.strftime('%Y-%m-%d %H:%M:%S')}"
+                )
+                sql = """
+                    SELECT
+                        t.id,
+                        t.name,
+                        t.content,
+                        v.comment_submission,
+                        t.date_creation,
+                        t.date_mod,
+                        t.status,
+                        req_user.name AS requester_name,
+                        req_user.phone AS phone,
+                        val_user.name AS validator_name,
+                        val_user.phone AS validator_phone
+                    FROM glpi_tickets AS t
+                    -- Join para pegar a validação
+                    LEFT JOIN glpi_ticketvalidations AS v
+                    ON t.id = v.tickets_id
+                    -- Join para encontrar o Solicitante do ticket (type=1)
+                    LEFT JOIN glpi_tickets_users AS req_tu
+                    ON t.id = req_tu.tickets_id
+                    AND req_tu.type = 1
+                    -- Join para encontrar o usuario Atribuído ao ticket
+                    LEFT JOIN glpi_users AS req_user
+                    ON req_tu.users_id = req_user.id
+                    -- Join para encontrar o Técnico Atribuído ao a validação
+                    LEFT JOIN glpi_users AS val_user
+                    ON v.users_id = val_user.id
+                    WHERE t.date_mod >= %s
+                    and v.status = 2
+                    ORDER BY t.date_mod DESC;
+                    """
+                cursor.execute(sql, (time_threshold,))
+                chamados = cursor.fetchall()
+                # Remove tags HTML do campo content
+                for chamado in chamados:
+                    chamado["content"] = self.normalize_html_text(chamado["content"])
+                    chamado["comment_submission"] = self.normalize_html_text(
+                        chamado["comment_submission"]
+                    )
+                return chamados
+        except pymysql.MySQLError as e:
+            logging.error(f"Erro ao buscar acompanhamentos: {e}")
+            return []
+        finally:
+            conn.close()
+
     def get_new_followups(self, interval_minutes=3):
         """Busca por novos acompanhamentos criados no intervalo de tempo."""
         conn = self._get_db_connection()
@@ -208,11 +328,12 @@ def __main__():
                     from services.chamada_notificacao import enviar_notificacao
 
                     mensagem = (
-                        f"🆕 Novo acompanhamento de chamado!\n"
-                        f"Ticket: {followup['ticket_title']}\n"
-                        f"Autor: {followup['author_name']}\n"
-                        f"Data: {followup['date_creation']}\n"
-                        f"Conteúdo: {followup['content']}\n"
+                        f"💬 Novo acompanhamento\n"
+                        f"{followup['author_name']} adicionou um acompanhamento no chamado #{followup['ticket_id']}.\n"
+                        f"Título do chamado:\n{followup['ticket_title']}\n"
+                        f"Mensagem Adicionada:\n{followup['content']}\n"
+                        f"Registrado em: \n{followup['date_creation']}\n"
+                        f"Clique para ver o chamado⬇️: \nhttp://{os.getenv('GLPI_URL')}/front/ticket.form.php?id={followup['ticket_id']}\n"
                     )
                     enviar_notificacao(mensagem, followup["phone"])
         else:
@@ -228,16 +349,62 @@ def __main__():
                     from services.chamada_notificacao import enviar_notificacao
 
                     mensagem = (
-                        f"🆕 Novo chamado criado!\n"
+                        f"🎫 Novo chamado GLPI\n"
                         f"ID: {ticket['id']}\n"
                         f"Título: {ticket['name']}\n"
                         f"Solicitante: {ticket['requester_name']}\n"
-                        f"Data de criação: {ticket['date_creation']}\n"
-                        f"Status: {monitor.status_map.get(ticket['status'], 'Desconhecido')}\n"
+                        f"Descrição:\n{ticket['content']}\n"
+                        f"Registrado em: {ticket['date_creation']}\n"
+                        f"Clique para ver o chamado⬇️: \nhttp://{os.getenv('GLPI_URL')}/front/ticket.form.php?id={ticket['id']}\n"
                     )
                     enviar_notificacao(mensagem, ticket["phone"])
         else:
             logging.info("Nenhum novo ticket encontrado.")
+        closed_tickets = monitor.get_close_tickets()
+        if closed_tickets:
+            logging.info(f"Encontrados {len(closed_tickets)} tickets fechados.")
+            for ticket in closed_tickets:
+                logging.info(
+                    f"Ticket ID: {ticket['id']}, Título: {ticket['name']}, Solicitante: {ticket['requester_name']}, Data de fechamento: {ticket['date_mod']}"
+                )
+                if ticket["phone"]:
+                    from services.chamada_notificacao import enviar_notificacao
+
+                    mensagem = (
+                        f"✅ Chamado Fechado!\n"
+                        f"ID:\n{ticket['id']}\n"
+                        f"Título:\n{ticket['name']}\n"
+                        f"Solicitante:\n{ticket['requester_name']}\n"
+                        f"Data de fechamento:\n{ticket['date_mod']}\n"
+                        f"Solução:\n{ticket['content']}\n"
+                        f"Clique para ver o chamado⬇️: \nhttp://{os.getenv('GLPI_URL')}/front/ticket.form.php?id={ticket['id']}\n"
+                    )
+                    enviar_notificacao(mensagem, ticket["phone"])
+        else:
+            logging.info("Nenhum ticket fechado encontrado.")
+        validations = monitor.get_new_validations()
+        if validations:
+            logging.info(f"Encontradas {len(validations)} novas aprovações.")
+            for validation in validations:
+                logging.info(
+                    f"Ticket ID: {validation['id']}, Título: {validation['name']}, Solicitante: {validation['requester_name']}, Validador: {validation['validator_name']}, Data: {validation['date_mod']}"
+                )
+                if validation["phone"]:
+                    from services.chamada_notificacao import enviar_notificacao
+
+                    mensagem = (
+                        f"☑️ Foi solicitada a aprovação do seu chamado!\n"
+                        f"ID:\n{validation['id']}\n"
+                        f"Título:\n{validation['name']}\n"
+                        f"Solicitante:\n{validation['requester_name']}\n"
+                        f"Validador:\n{validation['validator_name']}\n"
+                        f"Comentário da Solicitação:\n{validation['comment_submission']}\n"
+                        f"Registrado em:\n{validation['date_mod']}\n"
+                        f"Clique para ver o chamado⬇️: \nhttp://{os.getenv('GLPI_URL')}/front/ticket.form.php?id={validation['id']}\n"
+                    )
+                    enviar_notificacao(mensagem, validation["phone"])
+        else:
+            logging.info("Nenhuma nova aprovação encontrada.")
         time.sleep(180)
 
 
