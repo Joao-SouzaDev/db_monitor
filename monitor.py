@@ -330,9 +330,9 @@ def __main__():
                     mensagem = (
                         f"💬 Novo acompanhamento\n"
                         f"{followup['author_name']} adicionou um acompanhamento no chamado #{followup['ticket_id']}.\n"
-                        f"Título do chamado:\n{followup['ticket_title']}\n"
-                        f"Mensagem Adicionada:\n{followup['content']}\n"
-                        f"Registrado em: \n{followup['date_creation']}\n"
+                        f"Título do chamado: {followup['ticket_title']}\n"
+                        f"Mensagem Adicionada: {followup['content']}\n"
+                        f"Registrado em: {followup['date_creation']}\n"
                         f"Clique para ver o chamado⬇️: \nhttp://{os.getenv('GLPI_URL')}/front/ticket.form.php?id={followup['ticket_id']}\n"
                     )
                     enviar_notificacao(mensagem, followup["phone"])
@@ -353,7 +353,7 @@ def __main__():
                         f"ID: {ticket['id']}\n"
                         f"Título: {ticket['name']}\n"
                         f"Solicitante: {ticket['requester_name']}\n"
-                        f"Descrição:\n{ticket['content']}\n"
+                        f"Descrição: {ticket['content']}\n"
                         f"Registrado em: {ticket['date_creation']}\n"
                         f"Clique para ver o chamado⬇️: \nhttp://{os.getenv('GLPI_URL')}/front/ticket.form.php?id={ticket['id']}\n"
                     )
@@ -372,11 +372,11 @@ def __main__():
 
                     mensagem = (
                         f"✅ Chamado Fechado!\n"
-                        f"ID:\n{ticket['id']}\n"
-                        f"Título:\n{ticket['name']}\n"
-                        f"Solicitante:\n{ticket['requester_name']}\n"
-                        f"Data de fechamento:\n{ticket['date_mod']}\n"
-                        f"Solução:\n{ticket['content']}\n"
+                        f"ID: {ticket['id']}\n"
+                        f"Título: {ticket['name']}\n"
+                        f"Solicitante: {ticket['requester_name']}\n"
+                        f"Data de fechamento: {ticket['date_mod']}\n"
+                        f"Solução: {ticket['content']}\n"
                         f"Clique para ver o chamado⬇️: \nhttp://{os.getenv('GLPI_URL')}/front/ticket.form.php?id={ticket['id']}\n"
                     )
                     enviar_notificacao(mensagem, ticket["phone"])
@@ -394,12 +394,12 @@ def __main__():
 
                     mensagem = (
                         f"☑️ Foi solicitada a aprovação do seu chamado!\n"
-                        f"ID:\n{validation['id']}\n"
-                        f"Título:\n{validation['name']}\n"
-                        f"Solicitante:\n{validation['requester_name']}\n"
-                        f"Validador:\n{validation['validator_name']}\n"
-                        f"Comentário da Solicitação:\n{validation['comment_submission']}\n"
-                        f"Registrado em:\n{validation['date_mod']}\n"
+                        f"ID: {validation['id']}\n"
+                        f"Título: {validation['name']}\n"
+                        f"Solicitante: {validation['requester_name']}\n"
+                        f"Validador: {validation['validator_name']}\n"
+                        f"Comentário da Solicitação: {validation['comment_submission']}\n"
+                        f"Registrado em: {validation['date_mod']}\n"
                         f"Clique para ver o chamado⬇️: \nhttp://{os.getenv('GLPI_URL')}/front/ticket.form.php?id={validation['id']}\n"
                     )
                     enviar_notificacao(mensagem, validation["phone"])
