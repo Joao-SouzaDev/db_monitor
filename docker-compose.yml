@@ -11,3 +11,5 @@ services:
     working_dir: /app
     command: python monitor.py
     restart: unless-stopped
+    networks:
+      - glpi_network
