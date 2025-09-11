@@ -13,3 +13,6 @@ services:
     restart: unless-stopped
     networks:
       - glpi_network
+networks:
+  glpi_network:
+    driver: bridge
