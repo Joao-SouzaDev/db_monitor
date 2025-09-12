@@ -333,7 +333,7 @@ def __main__():
                         f"Título do chamado: {followup['ticket_title']}\n"
                         f"Mensagem Adicionada: {followup['content']}\n"
                         f"Registrado em: {followup['date_creation']}\n"
-                        f"Clique para ver o chamado⬇️: \nhttp://{os.getenv('GLPI_URL')}/front/ticket.form.php?id={followup['ticket_id']}\n"
+                        f"Clique para ver o chamado⬇️: \n{os.getenv('GLPI_URL')}/front/ticket.form.php?id={followup['ticket_id']}\n"
                     )
                     enviar_notificacao(mensagem, followup["phone"])
         else:
@@ -355,7 +355,7 @@ def __main__():
                         f"Solicitante: {ticket['requester_name']}\n"
                         f"Descrição: {ticket['content']}\n"
                         f"Registrado em: {ticket['date_creation']}\n"
-                        f"Clique para ver o chamado⬇️: \nhttp://{os.getenv('GLPI_URL')}/front/ticket.form.php?id={ticket['id']}\n"
+                        f"Clique para ver o chamado⬇️: \n{os.getenv('GLPI_URL')}/front/ticket.form.php?id={ticket['id']}\n"
                     )
                     enviar_notificacao(mensagem, ticket["phone"])
         else:
@@ -377,7 +377,7 @@ def __main__():
                         f"Solicitante: {ticket['requester_name']}\n"
                         f"Data de fechamento: {ticket['date_mod']}\n"
                         f"Solução: {ticket['content']}\n"
-                        f"Clique para ver o chamado⬇️: \nhttp://{os.getenv('GLPI_URL')}/front/ticket.form.php?id={ticket['id']}\n"
+                        f"Clique para ver o chamado⬇️: \n{os.getenv('GLPI_URL')}/front/ticket.form.php?id={ticket['id']}\n"
                     )
                     enviar_notificacao(mensagem, ticket["phone"])
         else:
@@ -400,7 +400,7 @@ def __main__():
                         f"Validador: {validation['validator_name']}\n"
                         f"Comentário da Solicitação: {validation['comment_submission']}\n"
                         f"Registrado em: {validation['date_mod']}\n"
-                        f"Clique para ver o chamado⬇️: \nhttp://{os.getenv('GLPI_URL')}/front/ticket.form.php?id={validation['id']}\n"
+                        f"Clique para ver o chamado⬇️: \n{os.getenv('GLPI_URL')}/front/ticket.form.php?id={validation['id']}\n"
                     )
                     enviar_notificacao(mensagem, validation["phone"])
         else:
