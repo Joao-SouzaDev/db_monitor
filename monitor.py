@@ -393,11 +393,10 @@ def __main__():
                     from services.chamada_notificacao import enviar_notificacao
 
                     mensagem = (
-                        f"☑️ Foi solicitada a aprovação do seu chamado!\n"
+                        f"☑️ Nova Aprovação Solicitada!\n"
                         f"ID: {validation['id']}\n"
                         f"Título: {validation['name']}\n"
                         f"Solicitante: {validation['requester_name']}\n"
-                        f"Validador: {validation['validator_name']}\n"
                         f"Comentário da Solicitação: {validation['comment_submission']}\n"
                         f"Registrado em: {validation['date_mod']}\n"
                         f"Clique para ver o chamado⬇️: \n{os.getenv('GLPI_URL')}/front/ticket.form.php?id={validation['id']}\n"
