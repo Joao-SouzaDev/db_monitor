@@ -70,9 +70,9 @@ class GLPIMonitor:
                         t.date_creation,
                         t.date_mod,
                         t.status,
-                        req_user.name AS requester_name,
+                        CONCAT(req_user.firstname, ' ', req_user.realname) AS requester_name,
                         req_email.email AS requester_email,
-                        tech_user.name AS technician_name,
+                        CONCAT(tech_user.firstname, ' ', tech_user.realname) AS technician_name,
                         req_user.phone AS phone,
                         tech_email.email AS technician_email
                     FROM glpi_tickets AS t
@@ -128,10 +128,10 @@ class GLPIMonitor:
                         t.date_creation,
                         t.date_mod,
                         t.status,
-                        req_user.name AS requester_name,
+                        CONCAT(req_user.firstname, ' ', req_user.realname) AS requester_name,
                         req_email.email AS requester_email,
                         req_user.phone AS phone,
-                        tech_user.name AS technician_name,
+                        CONCAT(tech_user.firstname, ' ', tech_user.realname) AS technician_name,
                         tech_email.email AS technician_email
                     FROM glpi_tickets AS t
                     -- Join para pegar a descrição da solução
@@ -191,9 +191,9 @@ class GLPIMonitor:
                         t.date_creation,
                         t.date_mod,
                         t.status,
-                        req_user.name AS requester_name,
+                        CONCAT(req_user.firstname, ' ', req_user.realname) AS requester_name,
                         req_user.phone AS phone,
-                        val_user.name AS validator_name,
+                        CONCAT(val_user.firstname, ' ', val_user.realname) AS validator_name,
                         val_user.phone AS validator_phone
                     FROM glpi_tickets AS t
                     -- Join para pegar a validação
@@ -250,10 +250,10 @@ class GLPIMonitor:
                         t.name AS ticket_title,
                         author.name AS author_name,
                         author_email.email AS author_email,
-                        req_user.name AS requester_name,
+                        CONCAT(req_user.firstname, ' ', req_user.realname) AS requester_name,
                         req_user.phone AS phone,
                         req_email.email AS requester_email,
-                        tech_user.name AS technician_name,
+                        CONCAT(tech_user.firstname, ' ', tech_user.realname) AS technician_name,
                         tech_email.email AS technician_email
                     FROM glpi_itilfollowups AS f
                     -- Join para pegar o título do ticket
@@ -389,7 +389,7 @@ def __main__():
                 logging.info(
                     f"Ticket ID: {validation['id']}, Título: {validation['name']}, Solicitante: {validation['requester_name']}, Validador: {validation['validator_name']}, Data: {validation['date_mod']}"
                 )
-                if validation["phone"]:
+                if validation["validator_phone"]:
                     from services.chamada_notificacao import enviar_notificacao
 
                     mensagem = (
@@ -402,7 +402,7 @@ def __main__():
                         f"Registrado em: {validation['date_mod']}\n"
                         f"Clique para ver o chamado⬇️: \n{os.getenv('GLPI_URL')}/front/ticket.form.php?id={validation['id']}\n"
                     )
-                    enviar_notificacao(mensagem, validation["phone"])
+                    enviar_notificacao(mensagem, validation["validator_phone"])
         else:
             logging.info("Nenhuma nova aprovação encontrada.")
         time.sleep(180)
